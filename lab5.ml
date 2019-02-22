@@ -4,18 +4,7 @@
  *)
 
 (*
-Objective:
-
-In this lab you'll practice concepts of algebraic data types,
-including product types (like tuples) and sum types (like variants),
-and the expressive power that arises from combining both. A theme will
-be the requirement of and checking for consistency with invariants.
-
-NOTE: Since we ask that you define types in this lab, you must
-complete certain exercises before this will compile with the testing
-framework on the course grading server. Exercises 1, 2, 6, and 9 are
-required for full compilation.
-
+                               SOLUTION
  *)
 
 (*==============================================================================
@@ -100,7 +89,9 @@ channels. You'll want to use Simple and RGB as the value constructors
 in this new variant type.
 ......................................................................*)
 
-type color = Rgb of (int * int * int) | Simple of color_label ;;
+type color =
+  | Simple of color_label
+  | RGB of int * int * int ;;
 
 (* There is an important assumption about the RGB values that
 determine whether a color is valid or not. The RGB type presupposes an
@@ -147,11 +138,15 @@ an Invalid_color exception with a useful message.
 
 exception Invalid_color of string ;;
 
-let validated_rgb (clr : color) : color =
-  match clr with
-  | Rgb (x, y, z) -> if (x >= 0 && x <= 255) && (y >= 0 && y <= 255) && (z >= 0 && z <= 255) then clr else
-    raise (Invalid_color "rgb accepts 8-bit values")
-  | Simple x -> Simple x ;;
+let validated_rgb (c : color) : color =
+  let bad (x : int) : bool = (x < 0 || x > 255) in
+  match c with
+  | Simple x -> c
+  | RGB (r, g, b) ->
+     if bad r then raise (Invalid_color "bad red channel")
+     else if bad g then raise (Invalid_color "bad green channel")
+     else if bad b then raise (Invalid_color "bad blue channel")
+     else c ;;
 
 (*......................................................................
 Exercise 4: Write a function, make_color, that accepts three integers
@@ -160,7 +155,7 @@ to verify the invariant.
 ......................................................................*)
 
 let make_color (r : int) (g : int) (b : int) : color =
-  Rgb (r, g, b) ;;
+  validated_rgb (RGB (r, g, b)) ;;
 
 (*......................................................................
 Exercise 5: Write a function, convert_to_rgb, that accepts a color and
@@ -177,17 +172,19 @@ below are some other values you might find helpful.
     240 | 130 | 240 | Violet
 ......................................................................*)
 
-let convert_to_rgb (clr : color) : color=
-  match clr with
-  | Rgb (x, y, z) -> validated_rgb clr
-  | Simple x -> if x = Orange then Rgb (255, 165, 0)
-                else if x = Yellow then Rgb (255, 255, 0)
-                else if x = Indigo then Rgb (75, 0, 130)
-                else if x = Violet then Rgb (240, 130, 240)
-                else if x = Red then Rgb (255, 0, 0)
-                else if x = Green then Rgb (0, 64, 0)
-                else if x = Blue then Rgb (0, 0, 64)
-                else Rgb (154, 16, 52) ;;
+let convert_to_rgb (c : color) : int * int * int =
+  match c with
+  | RGB (r, g, b) -> (r, g, b)
+  | Simple x ->
+     match x with
+     | Red ->     (255,   0,   0)
+     | Crimson -> (164,  16,  52)
+     | Orange ->  (255, 165,   0)
+     | Yellow ->  (255, 255,   0)
+     | Green ->   (  0, 255,   0)
+     | Blue ->    (  0,   0, 255)
+     | Indigo ->  ( 75,   0, 130)
+     | Violet ->  (240, 130, 240) ;;
 
 (*======================================================================
 Part 2: Dates as a record type
@@ -212,11 +209,7 @@ should be. Then, consider the implications of representing the overall
 data type as a tuple or a record.
 ......................................................................*)
 
-type date = {
-  day : int;
-  month : int;
-  year : int
-} ;;
+type date = { year : int; month : int; day : int } ;;
 
 (* After you've thought it through, look up the Date module in the
 OCaml documentation to see how this was implemented there. If you
